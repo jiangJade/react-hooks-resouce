@@ -10,11 +10,30 @@
 
 
     <title>rAF理解属于fiber的api</title>
+    <style>
+        .flexBox {
+            display: flex;
+            width: 600px;
+            height: 300px;
+        }
+        .item1 {
+            flex: 0 0 500px;
+            background-color: red;
+        }
+        .item2 {
+            flex: 0 0 300px;
+            background-color: blue;
+        }
+    </style>
 </head>
 
 <body>
     <div id="progess-bar" style="background: lightblue; width:0; height:20px"></div>
     <button id="btn">点击</button>
+    <div class="flexBox">
+        <div class="item1"></div>
+        <div class="item2"></div>
+    </div>
     <script>
 
         let A1 = { type: 'div', key: 'A1' };

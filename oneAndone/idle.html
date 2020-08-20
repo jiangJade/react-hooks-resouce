@@ -13,7 +13,6 @@
 </head>
 
 <body>
-
     <script>
         let allStart = Date.now();
         function sleep(delay) {
@@ -50,7 +49,7 @@
         function workLoop(deadline) {
             console.log('本帧剩余时间', deadline.timeRemaining());
             // 如果此帧的剩余时间超过0，或者此已经超时了
-            while ((deadline.timeRemaining() > 0 || deadline.didTimeout) && works.length) {
+            while ((deadline.timeRemaining() > 1 || deadline.didTimeout) && works.length) {
                 performUnitOfWork();
             } // 如果说没有剩余时间了，就需要放弃执行任务控制权，将执行权交换给浏览器
             if (works.length) { // 说明还有任务没有执行完
@@ -62,6 +61,27 @@
             // shift 取出第一个元素
             works.shift()();
         }
+
+        // let loop = (...result) => {
+        //     const arr = [];
+        //     function forArr(index, pre) {
+
+        //         const currentArr = result[index];
+        //         const returnForOf = index === currentArr.length;
+        //         for(const item of currentArr) {
+        //             let curr = pre.concat(item);
+        //             if(returnForOf) {
+        //                 arr.push(curr);
+        //             }else {
+        //                 forArr(index + 1, curr)
+        //             }
+        //         }
+        //     }
+        //     forArr(0, []);
+        //     return arr;
+        // }
+        // console.log(loop(['iphoneX', 'iphoneXS'], [128, 256], ['白色', '黑色']), 4444444)
+       
     </script>
 </body>
 
