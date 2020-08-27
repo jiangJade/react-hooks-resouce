@@ -1,4 +1,3 @@
-
 /*
     创建元素（虚拟dom)的方法
     @params {} type 元素的类型 div p span
@@ -7,6 +6,8 @@
 */
 
 import { ELEMENT_TEXT } from './constants';
+import { Update } from './updateQueue';
+import { scheduleRoot, useReducer, useState } from './scheduler';
 
 function createElement(type, config, ...children) {
 
@@ -29,8 +30,28 @@ function createElement(type, config, ...children) {
 
 }
 
-const React = {
-    createElement
+
+class Component {
+    constructor(props) {
+        this.props = props;
+        // this.updateQueue = new UpdateQueue();
+    }
+    setState(payload) { // payload 可能是一个对象  也可能是一个函数
+        let update = new Update(payload);
+        // enqueueUpdate源码是放在此类组件对应的fiber节点的 internalFiber
+        this.internalFiber.updateQueue.enqueueUpdate(update);
+        // this.updateQueue.enqueueUpdate(update);
+        scheduleRoot(); // 从根节点开始调度
+    }
 }
 
+Component.prototype.isReactComponent = {}; // 有这个属性 说明是一个类组件
+
+const React = {
+    createElement,
+    Component,
+    useReducer,
+    useState
+}
+debugger
 export default React;

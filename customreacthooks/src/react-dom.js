@@ -2,7 +2,7 @@
     render 是一个把元素渲染到一个容器内部
 */
 import { TAG_ROOT } from './constants';
-import { scheduleRoot } from './schedule';
+import { scheduleRoot } from './scheduler';
 
 function render(element, container) { // container = root DOM节点
     let rootFiber = {
