@@ -53,5 +53,4 @@ const React = {
     useReducer,
     useState
 }
-debugger
 export default React;

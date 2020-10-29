@@ -31,6 +31,7 @@ function workLoop(deadline) {
     while ((deadline.timeRemaining() > 1 || deadline.didTimeout) && nextUnitOfWork) {
         nextUnitOfWork = preformUnitOfWork(nextUnitOfWork);
     }
+    
     if (!nextUnitOfWork) {
         console.log('render阶段结束');
         console.log(Date.now() - startTime);
@@ -66,3 +67,5 @@ function beginWork(fiber) {
 nextUnitOfWork = A1;
 
 requestIdleCallback(workLoop, { timeout: 1000 });
+
+

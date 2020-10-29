@@ -54,7 +54,7 @@ export function scheduleRoot(rootFiber) {
     nextUnitOfWork = workInProgressRoot;
 }
 
-function preformUnitOfWork(currentFiber) {
+function performUnitOfWork(currentFiber) {
     beginWork(currentFiber); // 开始
     if(currentFiber.child) {
         return currentFiber.child;
@@ -296,13 +296,14 @@ function reconcileChildren(currentFiber, newChildren) {// [A1]
         }
         newChildIndex++;
     }
+    
  }
 
 // 循环执行工作 nextUnitOfWork
 function workLoop(deadline) {
     let shouldYield = false; // 是否要让出时间片或者控制权
     while(nextUnitOfWork && !shouldYield) {
-        nextUnitOfWork = preformUnitOfWork(nextUnitOfWork);
+        nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
         
         shouldYield = deadline.timeRemaining() < 1; // 没有时间的话就要让出控制权 1得单位是毫秒
     }
@@ -317,7 +318,7 @@ function workLoop(deadline) {
 
 // 提交
 function commitRoot() {
-    deletions.forEach(commitWork); // 执行effect list前 把改删除的元素 删除掉
+    deletions.forEach(commitWork); // 执行effect list前 把该删除的元素 删除掉
     let currentFiber = workInProgressRoot.firstEffect;
     while (currentFiber) {
         console.log('commitRoot', workInProgressRoot, currentFiber.type);
@@ -407,7 +408,6 @@ export function useReducer(reducer, initialValue) {
         }
     }
     const dispatch = action => { // {type: 'ADD'}
-    debugger
         let payload = reducer ? reducer(newHook.state, action) : action;
         console.log(333333333333, newHook);
         newHook.updateQueue.enqueueUpdate(
@@ -422,10 +422,40 @@ export function useReducer(reducer, initialValue) {
 }
 
 export function useState(initialValue) {
-    debugger
     return useReducer(null, initialValue);
 }
 
 // React 告诉浏览器 我现在有任务请你在闲的时候执行workLoop 如果超过500毫秒 还没有时间 必须执行
 // 这里有一个优先级的概念 expirationTime 很复杂
 requestIdleCallback(workLoop, { timeout: 500 });
+
+/*
+* react实现的更新调度流程  第一渲染从根节点调度 workInProgressRoot
+    在提交的时候(commitRoot)将workInProgressRoot 赋值给currentFiber 
+    并将workInProgressWork = null; 
+    第二次更新时 将判断是否传入了rootFiber
+    如果没传就将currenFiber结构赋值给workInProgressWork=
+    {
+        ...currentRoot,
+        alternate: currentRoot
+    }
+
+    如果传了就将rootFiber;   rootFiber.alternate = currentRoot;
+            workInProgressRoot = rootFiber
+
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
