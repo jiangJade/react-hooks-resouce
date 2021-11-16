@@ -14,8 +14,7 @@ export const PLACEMENT = Symbol.for('PLACEMENT');
 export const UPDATE = Symbol.for('UPDATE');
 //删除
 export const DELETION = Symbol.for('DELETION');
-// 添加
-export const ADD = Symbol.for('ADD');
+//类组件
 export const TAG_CLASS = Symbol.for('TAG_CLASS');
 //函数组件
 export const TAG_FUNCTION_COMPONENT = Symbol.for('TAG_FUNCTION_COMPONENT');
