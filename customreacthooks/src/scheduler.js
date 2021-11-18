@@ -26,12 +26,12 @@ export function scheduleRoot(rootFiber) {
 
 // 工作循环
 function workLoop(deadline) {
-  let shouldYeild = false;
+  let shouledYield = false; // shouledYield 写错了
 
   // 5 shouldYeild没有取反  workLoop函数写完就声明一个根 workInProgressRoot变量
-  while (nextUnitOfWork && !shouldYeild) {
+  while (nextUnitOfWork && !shouledYield) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
-    shouldYeild = deadline.timeRemaining() < 1; // 没有时间就不执行render
+    shouledYield = deadline.timeRemaining() < 1; // 没有时间就不执行render
   }
   if (!nextUnitOfWork && workInProgressRoot) {
     // console.log('render阶段结束');
@@ -41,31 +41,8 @@ function workLoop(deadline) {
   requestIdleCallback(workLoop, { timeout: 500 });
 }
 
-function commitRoot() {
-  console.log(workInProgressRoot, '11');
-  let currentFiber = workInProgressRoot.firstEffect;
-  while (currentFiber) {
-    commitWork(currentFiber);
-    currentFiber = currentFiber.nextEffect;
-  }
-  workInProgressRoot = null;
-}
-
-function commitWork(currentFiber) {
-  if (!currentFiber) {
-    // 没有取反
-    return;
-  }
-  // 找父节点 将子节点添加进父节点
-  const returnFiber = currentFiber.return;
-  const domReturn = returnFiber.stateNode;
-  if (currentFiber.effectTag === PLACEMENT) {
-    domReturn.appendChild(currentFiber.stateNode);
-  }
-  currentFiber.effectTag = null; // 清空副作用
-}
-
 function performUnitOfWork(currentFiber) {
+  // performUnitOfWork函数名写错了
   // 开始工作 一直执行beginWork 直到遍历完所有的dom
   beginWork(currentFiber);
   if (currentFiber.child) {
@@ -139,20 +116,44 @@ function beginWork(currentFiber) {
   }
 }
 
-function updateHostText(currentFiber) {
-  if (!currentFiber.stateNode) {
-    currentFiber.stateNode = createDOM(currentFiber);
-  }
-}
-
 // 8忘记updateHost怎么写的了
 // 创建真实DOM
 function updateHost(currentFiber) {
   if (!currentFiber.stateNode) {
     currentFiber.stateNode = createDOM(currentFiber);
   }
-  const newChildren = currentFiber.props.newChildren; // [A1,B1,B2]
+  const newChildren = currentFiber.props.children; // children 写成了newChildren [A1,B1,B2]
   reconcileChildren(currentFiber, newChildren);
+}
+
+function commitRoot() {
+  console.log(workInProgressRoot, '11');
+  let currentFiber = workInProgressRoot.firstEffect;
+  while (currentFiber) {
+    commitWork(currentFiber);
+    currentFiber = currentFiber.nextEffect;
+  }
+  workInProgressRoot = null;
+}
+
+function commitWork(currentFiber) {
+  if (!currentFiber) {
+    // 没有取反
+    return;
+  }
+  // 找父节点 将子节点添加进父节点
+  const returnFiber = currentFiber.return;
+  const domReturn = returnFiber.stateNode;
+  if (currentFiber.effectTag === PLACEMENT) {
+    domReturn.appendChild(currentFiber.stateNode);
+  }
+  currentFiber.effectTag = null; // 清空副作用
+}
+
+function updateHostText(currentFiber) {
+  if (!currentFiber.stateNode) {
+    currentFiber.stateNode = createDOM(currentFiber);
+  }
 }
 
 function createDOM(currentFiber) {
@@ -205,13 +206,16 @@ function reconcileChildren(currentFiber, newChildren) {
       nextEffect: null,
     };
     // 5这里没有用newChildIndex === 0 做判断
-    if (newChildIndex === 0) {
-      // 这时后的currentFiber是root div
-      currentFiber.child = newFiber; // newFiber是id为A1的div
-    } else {
-      prevSibling.sibling = newFiber; // newFiber是对象 对象的指针会被改变
+    // 最小的儿子没有弟弟
+    if (newFiber) {
+      if (newChildIndex === 0) {
+        // 这时后的currentFiber是root div
+        currentFiber.child = newFiber; // newFiber是id为A1的div
+      } else {
+        prevSibling.sibling = newFiber; // newFiber是对象 对象的指针会被改变
+      }
+      prevSibling = newFiber;
     }
-    prevSibling = newFiber;
     newChildIndex++;
   }
 }

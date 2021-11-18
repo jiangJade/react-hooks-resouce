@@ -23,7 +23,7 @@ export function scheduleRoot(rootFiber) {
   nextUnitOfWork = rootFiber;
 }
 
-function preformUnitOfWork(currentFiber) {
+function performUnitOfWork(currentFiber) {
   beginWork(currentFiber); // 开始
   if (currentFiber.child) {
     return currentFiber.child;
@@ -188,7 +188,7 @@ function reconcileChildren(currentFiber, newChildren) {
 function workLoop(deadline) {
   let shouldYield = false; // 是否要让出时间片或者控制权
   while (nextUnitOfWork && !shouldYield) {
-    nextUnitOfWork = preformUnitOfWork(nextUnitOfWork);
+    nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
 
     shouldYield = deadline.timeRemaining() < 1; // 没有时间的话就要让出控制权 1得单位是毫秒
   }
