@@ -36,7 +36,7 @@ export function scheduleRoot(rootFiber) {
     workInProgressRoot = currentRoot.alternate; // 第一次渲染出来的那个fiber树
     workInProgressRoot.alternate = currentRoot; // 让这个树的替身指向当前的currentRoot
     if (rootFiber) {
-      workInProgressRoot.prop = rootFiber.props; // 让它的props更新成新的props
+      workInProgressRoot.props = rootFiber.props; // 让它的props更新成新的props
     }
   } else if (currentRoot) {
     if (rootFiber) {

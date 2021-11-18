@@ -1,10 +1,10 @@
-import { scheduleRoot } from './scheduler';
 import { TAG_ROOT } from './constants';
+import { scheduleRoot } from './scheduler';
 
 function render(element, container) {
-  let rootFiber = {
-    tag: TAG_ROOT, // 这里写错了 写成了type 应该是tag
-    stateNode: container,
+  const rootFiber = {
+    tag: TAG_ROOT,
+    stateNode: container, // root div
     props: { children: [element] },
   };
   scheduleRoot(rootFiber);

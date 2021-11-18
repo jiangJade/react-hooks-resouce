@@ -16,5 +16,6 @@ export const UPDATE = Symbol.for('UPDATE');
 export const DELETION = Symbol.for('DELETION');
 // 添加
 export const ADD = Symbol.for('ADD');
+export const TAG_CLASS = Symbol.for('TAG_CLASS');
 //函数组件
 export const TAG_FUNCTION_COMPONENT = Symbol.for('TAG_FUNCTION_COMPONENT');
