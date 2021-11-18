@@ -24,23 +24,6 @@ export function scheduleRoot(rootFiber) {
   workInProgressRoot = rootFiber;
 }
 
-// 工作循环
-function workLoop(deadline) {
-  let shouledYield = false; // shouledYield 写错了
-
-  // 5 shouldYeild没有取反  workLoop函数写完就声明一个根 workInProgressRoot变量
-  while (nextUnitOfWork && !shouledYield) {
-    nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
-    shouledYield = deadline.timeRemaining() < 1; // 没有时间就不执行render
-  }
-  if (!nextUnitOfWork && workInProgressRoot) {
-    // console.log('render阶段结束');
-    commitRoot();
-  }
-  // 检查是否有任务需要执行
-  requestIdleCallback(workLoop, { timeout: 500 });
-}
-
 function performUnitOfWork(currentFiber) {
   // performUnitOfWork函数名写错了
   // 开始工作 一直执行beginWork 直到遍历完所有的dom
@@ -218,6 +201,23 @@ function reconcileChildren(currentFiber, newChildren) {
     }
     newChildIndex++;
   }
+}
+
+// 工作循环
+function workLoop(deadline) {
+  let shouledYield = false; // shouledYield 写错了
+
+  // 5 shouldYeild没有取反  workLoop函数写完就声明一个根 workInProgressRoot变量
+  while (nextUnitOfWork && !shouledYield) {
+    nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
+    shouledYield = deadline.timeRemaining() < 1; // 没有时间就不执行render
+  }
+  if (!nextUnitOfWork && workInProgressRoot) {
+    // console.log('render阶段结束');
+    commitRoot();
+  }
+  // 检查是否有任务需要执行
+  requestIdleCallback(workLoop, { timeout: 500 });
 }
 
 // 1这里写了之后忘记声明workInProgressRoot
