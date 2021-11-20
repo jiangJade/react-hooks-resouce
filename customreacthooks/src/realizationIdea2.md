@@ -48,7 +48,7 @@ updateDOM(currentFiber.stateNode,currentFiber.alternate.props,currentFiber.props
 
 声明 let oldFiber = currentFiber.alternate && currentFiber.alternate.child; // 第一次 oldFiber 为 null
 
-先判断类型 在 while 判断参数加 || oldFiber;就是 newChildIndex < newChildren.lenght || oldFiber
+先判断类型 在 while 判断加参数加 || oldFiber;就是 newChildIndex < newChildren.lenght || oldFiber
 
 在 newChild 下面声明一个 newFiber(虽然之前有一个)；
 
@@ -131,8 +131,8 @@ A/B A/B 切换 第一次有一个 A 树 第二次有一个 B 树 第三次不创
     // 第一次渲染出来的那个fiber tree
     workInProgressRoot = currentRoot.alternate;
 
-    3 workInProgress.props = rootFiber.props // 让他的props更新成新的props
-    4 workInProgress.alternate = currentRoot // 让这棵树的替身指向当前树
+    3 workInProgressRoot.props = rootFiber.props // 让他的props更新成新的props
+    4 workInProgressRoot.alternate = currentRoot // 让这棵树的替身指向当前树
   }
 
   2 在该函数到数第二行添加
@@ -144,7 +144,7 @@ A/B A/B 切换 第一次有一个 A 树 第二次有一个 B 树 第三次不创
 ```
  reconcileChildren 函数的
  if(sameType) { // 老的fiber和新的fiber虚拟DOM一样 可以复用
-   if(oldFiber.alternate) { // 说明已经更新果一次
+   if(oldFiber.alternate) { // 说明已经更新过一次
      newFiber = oldFiber.alternate;
      newFiber.props = newChild.props;
      newFiber.alternate = oldFiber;

@@ -61,7 +61,7 @@ let returnFiber = currentFiber.return;
 // 一直往上找
 
 ```
-  while([TAG_HOST,TAG_ROOT,TAG_TEXT].includes(currentFiber.tag)) {
+  while(![TAG_HOST,TAG_ROOT,TAG_TEXT].includes(currentFiber.tag)) {
     returnFiber = returnFiber.return;
   }
 ```
@@ -113,7 +113,7 @@ schedule 里面没有 rootFiber
       2 rootFiber.alternate = currentRoot;
       workInProgressRoot = rootFiber
     } else {
-      3 workInProgress = {
+      3 workInProgressRoot = {
       ...currentRoot,
       alternate: currentRoot
       }
@@ -156,7 +156,7 @@ setProps()
 
 ```
 
-在函数组件中结构出[countState,dispatch] = React.useReducer(reducer,{count:0})
+在函数组件中解构出[countState,dispatch] = React.useReducer(reducer,{count:0})
 
 2 在 scheduler 文件构建 useReducer
 一： 声明两个全局变量 let hookIndex; let workInProgressFiber = null;
@@ -168,7 +168,7 @@ const newChildren=[currentFiber.type(currentFiber.props)]
 三：声明 useReducer 并导出
 
 ```
-  export function useReducer(reducer,     initialValue) {
+  export function useReducer(reducer,initialValue) {
 
   let newHook = workInProgressFiber.alternate && workInProgressFiber.alternate.hooks && workInProgressFiber.alternate.hooks[hookIndex];
     if(newHook) {

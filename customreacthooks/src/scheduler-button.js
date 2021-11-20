@@ -6,10 +6,7 @@ import {
   PLACEMENT,
   DELETION,
   UPDATE,
-  TAG_FUNCTION_COMPONENT,
 } from './constants';
-import { Update } from './updateQueue';
-import { UpdateQueue } from './updateQueue';
 import { setProps } from './utils';
 
 /**
@@ -26,28 +23,17 @@ let nextUnitOfWork = null; // 下一个工作单元
 let workInProgressRoot = null; // 渲染成功的树
 let currentRoot = null; // 当前渲染成功的树
 let deletions = []; // 记录需要删除的节点  没有放在effect list里面
-let hookIndex = 0;
-let workInProgressFiber = null;
 
 export function scheduleRoot(rootFiber) {
   if (currentRoot && currentRoot.alternate) {
     // 已经更新过一次
     workInProgressRoot = currentRoot.alternate;
+    workInProgressRoot.props = rootFiber.props;
     workInProgressRoot.alternate = currentRoot;
-    if (rootFiber) {
-      workInProgressRoot.props = rootFiber.props;
-    }
   } else if (currentRoot) {
     // 当前渲染成功的树
-    if (rootFiber) {
-      rootFiber.alternate = currentRoot;
-      workInProgressRoot = rootFiber;
-    } else {
-      workInProgressRoot = {
-        ...currentRoot,
-        alternate: currentRoot,
-      };
-    }
+    rootFiber.alternate = currentRoot;
+    workInProgressRoot = rootFiber;
   } else {
     workInProgressRoot = rootFiber;
   }
@@ -88,47 +74,26 @@ function commitWork(currentFiber) {
   if (!currentFiber) {
     return;
   }
-  let returnFiber = currentFiber.return;
-  while (![TAG_HOST, TAG_TEXT, TAG_ROOT].includes(returnFiber.tag)) {
-    returnFiber = returnFiber.return;
-  }
-  let domReturn = returnFiber.stateNode;
+  const domReturn = currentFiber.return;
   if (currentFiber.effectTag === PLACEMENT) {
-    let nextFiber = currentFiber;
-
-    // 如果要挂载的节点不是DOM节点，比如说是类组件Fiber，直接找第一个儿子，知道找到一个真实DOM节点为止
-    while (nextFiber.tag !== TAG_HOST && nextFiber.tag !== TAG_TEXT) {
-      nextFiber = currentFiber.child;
-    }
-    domReturn.appendChild(nextFiber.stateNode);
+    domReturn.stateNode.appendChild(currentFiber.stateNode);
   } else if (currentFiber.effectTag === DELETION) {
-    return commitDeletion(currentFiber, domReturn);
+    domReturn.remove(currentFiber.stateNode);
   } else if (currentFiber.effectTag === UPDATE) {
-    if (currentFiber.type === ELEMENT_TEXT) {
-      if (currentFiber.alternate.props.text !== currentFiber.props.text) {
-        currentFiber.stateNode.textContent = currentFiber.props.text;
-      } else {
-        updateDOM(
-          currentFiber.stateNode,
-          currentFiber.alternate.props,
-          currentFiber.props
-        );
-      }
+    if (currentFiber.tag === ELEMENT_TEXT) {
+      domReturn.stateNode.textContent = currentFiber.props.text;
+    } else {
+      updateDOM(
+        currentFiber.stateNode,
+        currentFiber.alternate.props,
+        currentFiber.props
+      );
     }
   }
 
   currentFiber.effectTag = null;
 }
 
-function commitDeletion(currentFiber, domReturn) {
-  if (currentFiber.tag !== TAG_HOST && currentFiber.tag !== TAG_TEXT) {
-    domReturn.removeChild(currentFiber.stateNode);
-  } else {
-    commitDeletion(currentFiber.child, domReturn);
-  }
-}
-
-// 第一次执行performUnitOfWork 会拿到currentFiber.child 这个child是在reconcileChildren里面生成的
 function performUnitOfWork(currentFiber) {
   beginWork(currentFiber);
   if (currentFiber.child) {
@@ -171,35 +136,15 @@ function completeUnitOfWork(currentFiber) {
   }
 }
 
-/*
-*beginWork开始收下线的钱
-completeUnitOfWork
-1.创建真实DOM元素  真是DOM是指 div span p 这些 标签
-*/
-
 function beginWork(currentFiber) {
   if (currentFiber.tag === TAG_ROOT) {
-    updateHostRoot(currentFiber);
+    const newChildren = currentFiber.props.children;
+    reconcileChildren(currentFiber, newChildren);
   } else if (currentFiber.tag === TAG_HOST) {
     updateHost(currentFiber);
   } else if (currentFiber.tag === TAG_TEXT) {
     updateHostText(currentFiber);
-  } else if (currentFiber.tag === TAG_FUNCTION_COMPONENT) {
-    updateFunctionComponent(currentFiber);
   }
-}
-
-function updateHostRoot(currentFiber) {
-  const newChildren = currentFiber.props.children;
-  reconcileChildren(currentFiber, newChildren);
-}
-
-function updateFunctionComponent(currentFiber) {
-  hookIndex = 0;
-  workInProgressFiber = currentFiber;
-  workInProgressFiber.hooks = [];
-  const newChildren = [currentFiber.type(currentFiber.props)];
-  reconcileChildren(currentFiber, newChildren);
 }
 
 function updateHostText(currentFiber) {
@@ -244,55 +189,46 @@ function reconcileChildren(currentFiber, newChildren) {
   while (newChildIndex < newChildren.length || oldFiber) {
     let newChild = newChildren[newChildIndex]; // A1
     let tag;
+    let sameType = newChild && oldFiber && newChild.type === oldFiber.type;
     if (newChild && typeof newChild.type === 'string') {
       tag = TAG_HOST; // 原生节点 div p span
     } else if (newChild && newChild.type === ELEMENT_TEXT) {
       tag = TAG_TEXT;
-    } else if (newChild && typeof newChild.type === 'function') {
-      tag = TAG_FUNCTION_COMPONENT;
     }
     let newFiber;
     // 这里写的逻辑混乱
-    let sameType = newChild && oldFiber && newChild.type === oldFiber.type;
-
     if (sameType) {
       if (oldFiber.alternate) {
-        // 如果有上上次的fiber就拿来复用
         newFiber = oldFiber.alternate;
         newFiber.props = newChild.props;
         newFiber.alternate = oldFiber;
         newFiber.effectTag = UPDATE;
-        newFiber.updateQueue = oldFiber.updateQueue || new UpdateQueue();
         newFiber.nextEffect = null;
-      } else {
-        newFiber = {
-          tag: oldFiber.tag,
-          type: oldFiber.type,
-          props: newChild.props,
-          return: currentFiber,
-          alternate: oldFiber,
-          effectTag: UPDATE,
-          updateQueue: oldFiber.updateQueue || new UpdateQueue(),
-          stateNode: oldFiber.stateNode,
-          nextEffect: null,
-        };
+        newFiber.stateNode = null;
       }
+      newFiber = {
+        tag: oldFiber.tag,
+        type: oldFiber.type,
+        props: newChild.props,
+        return: oldFiber,
+        alternate: oldFiber,
+        effectTag: UPDATE,
+        nextEffect: null,
+        stateNode: null,
+      };
     } else {
       if (newChild) {
+        // oldFiber.effectTag = DELETION;
+        // deletions.push(oldFiber);
         newFiber = {
           tag,
           type: newChild.type,
           props: newChild.props,
           return: currentFiber,
           effectTag: PLACEMENT,
-          updateQueue: new UpdateQueue(),
           nextEffect: null,
           stateNode: null,
         };
-      }
-      if (oldFiber) {
-        oldFiber.effectTag = DELETION;
-        deletions.push(oldFiber);
       }
     }
     // 移动oldFiber指针
@@ -310,25 +246,6 @@ function reconcileChildren(currentFiber, newChildren) {
     }
     newChildIndex++;
   }
-}
-
-export function useReducer(reducer, initialValue) {
-  let newHook = workInProgressFiber?.alternate?.hooks?.[hookIndex];
-  if (newHook) {
-    newHook.state = newHook.updateQueue.forceUpdate(newHook.state);
-  } else {
-    newHook = {
-      state: initialValue,
-      updateQueue: new UpdateQueue(),
-    };
-  }
-  const dispatch = (action) => {
-    const payload = reducer ? reducer(newHook.state, action) : action;
-    newHook.updateQueue.enqueueUpdate(new Update(payload));
-    scheduleRoot();
-  };
-  workInProgressFiber.hooks[hookIndex++] = newHook;
-  return [newHook.state, dispatch];
 }
 
 // 有空闲时间帮忙执行一下任务

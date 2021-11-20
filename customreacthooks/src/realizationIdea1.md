@@ -168,7 +168,7 @@ reconcileChildren(currentFiber,newChildren);
 ```
 
 14 commitWork 函数接收 currentFiber;如果不是 currentFiber return 中断提交工作
-取出 returnFiber,取出 returnDOM；判断是否是新增，currentFiber.effectTag === PLACEMENT; returnDOM.appendChild(currentFiber.stateNode);
+取出 returnFiber,取出 domReturn；判断是否是新增，currentFiber.effectTag === PLACEMENT; domReturn.appendChild(currentFiber.stateNode);
 
 current.effectTag = null
 

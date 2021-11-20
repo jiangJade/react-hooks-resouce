@@ -1,26 +1,27 @@
 import React from './react';
 import ReactDom from './react-dom';
+import { ADD } from './constants';
 
-const style = { border: 'solid 3px red', margin: '20px' };
+function FunctionComponent() {
+  const reducer = (state, action) => {
+    switch (action.type) {
+      case ADD:
+        return { count: state.count + 1 };
+      default:
+        return state;
+    }
+  };
+  const [currentState, dispatch] = React.useReducer(reducer, { count: 0 });
+  console.log(currentState, '');
+  return (
+    <div>
+      <span>{currentState.count}</span>
+      <button onClick={() => dispatch({ type: ADD })}>计数器</button>
+    </div>
+  );
+}
 
-let element = (
-  <div id='A1' style={style}>
-    A1
-    <div id='B1' style={style}>
-      B1
-      <div id='C1' style={style}>
-        C1
-      </div>
-      <div id='C2' style={style}>
-        C2
-      </div>
-    </div>
-    <div id='B2' style={style}>
-      B2
-    </div>
-  </div>
+ReactDom.render(
+  <FunctionComponent name='计数器' />,
+  document.getElementById('root')
 );
-
-console.log(element, 1111111);
-
-ReactDom.render(element, document.getElementById('root'));
