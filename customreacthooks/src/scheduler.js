@@ -40,11 +40,11 @@ function commitWork(currentFiber) {
   if (!currentFiber) {
     return;
   }
-  const returnFiber = currentFiber.return;
-  const domReturn = returnFiber.stateNode;
+  const domReturn = currentFiber.return;
+
   //写错了 写成了returnFiber.effectTag
   if (currentFiber.effectTag === PLACEMENT) {
-    domReturn.appendChild(currentFiber.stateNode);
+    domReturn.stateNode.appendChild(currentFiber.stateNode);
   }
   currentFiber.effectTag = null;
 }
@@ -71,8 +71,8 @@ function completeUnitOfWork(currentFiber) {
     if (!returnFiber.firstEffect) {
       returnFiber.firstEffect = currentFiber.firstEffect;
     }
-    if (currentFiber.lastEffect) {
-      if (returnFiber.lastEffect) {
+    if (!!currentFiber.lastEffect) {
+      if (!!returnFiber.lastEffect) {
         returnFiber.lastEffect.nextEffect = currentFiber.firstEffect;
       } else {
         returnFiber.lastEffect = currentFiber.lastEffect;
@@ -177,9 +177,8 @@ function reconcileChildren(currentFiber, newChildren) {
         prevSibling.sibling = newFiber;
       }
       prevSibling = newFiber;
-
-      newChildIndex++;
     }
+    newChildIndex++;
   }
 }
 
