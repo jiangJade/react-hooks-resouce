@@ -89,6 +89,149 @@ function completeUnitOfWork(currentFiber) {
   }
 }
 
+// 开始工作  这里会将虚拟DOM转换成fiber节点
+function beginWork(currentFiber) {
+  if (currentFiber.tag === TAG_ROOT) {
+    updateHostRoot(currentFiber);
+  } else if (currentFiber.tag === TAG_HOST) {
+    updateHost(currentFiber);
+  } else if (currentFiber.tag === TAG_TEXT) {
+    updateHostText(currentFiber);
+  } else if (currentFiber.tag === TAG_FUNCTION_COMPONENT) {
+    updateFunctionComponent(currentFiber);
+  }
+}
+
+function updateFunctionComponent(currentFiber) {
+  hookIndex = 0;
+  workInProgressFiber = currentFiber;
+  workInProgressFiber.hooks = [];
+  // 忘记组装成一个数组了
+  const newChildren = [currentFiber.type(currentFiber.props)];
+  reconcileChildren(currentFiber, newChildren);
+}
+
+// A1
+function updateHost(currentFiber) {
+  if (!currentFiber.stateNode) {
+    currentFiber.stateNode = createDOM(currentFiber);
+  }
+  const newChildren = currentFiber.props.children;
+
+  reconcileChildren(currentFiber, newChildren);
+}
+
+function createDOM(currentFiber) {
+  if (currentFiber.tag === TAG_HOST) {
+    // 忘记怎么写了
+    const stateNode = document.createElement(currentFiber.type);
+    updateDOM(stateNode, {}, currentFiber.props);
+    return stateNode;
+  } else if (currentFiber.tag === TAG_TEXT) {
+    return document.createTextNode(currentFiber.props.text);
+  }
+}
+
+function updateDOM(stateNode, oldProps, newProps) {
+  // setAttribute 写成了attribute
+  if (stateNode && stateNode?.setAttribute) {
+    setProps(stateNode, oldProps, newProps);
+  }
+}
+
+function updateHostText(currentFiber) {
+  if (!currentFiber.stateNode) {
+    currentFiber.stateNode = createDOM(currentFiber);
+  }
+}
+
+// 根节点
+function updateHostRoot(currentFiber) {
+  const newChildren = currentFiber.props.children;
+  reconcileChildren(currentFiber, newChildren);
+}
+
+// 生成fiber节点 以及复用旧的fiber节点
+// newChildren 是一个数组
+function reconcileChildren(currentFiber, newChildren) {
+  let newChildIndex = 0;
+  let prevSibling;
+  let oldFiber = currentFiber.alternate && currentFiber.alternate.child;
+  if (oldFiber) {
+    oldFiber.firstEffect = oldFiber.nextEffect = oldFiber.lastEffect = null;
+  }
+  while (newChildIndex < newChildren.length || oldFiber) {
+    const newChild = newChildren[newChildIndex];
+
+    let tag;
+    if (newChild && typeof newChild.type === 'string') {
+      // div p
+      tag = TAG_HOST;
+    } else if (newChild && newChild.type === ELEMENT_TEXT) {
+      tag = TAG_TEXT;
+    } else if (newChild && newChild.type === 'function') {
+      tag = TAG_FUNCTION_COMPONENT;
+    }
+    const sameType = oldFiber && newChild && oldFiber.type === newChild.type;
+
+    let newFiber;
+    if (sameType) {
+      if (oldFiber.alternate) {
+        newFiber = oldFiber.alternate;
+        newFiber.props = newChild.props;
+        newFiber.alternate = oldFiber;
+        newFiber.effectTag = UPDATE;
+        newFiber.nextEffect = null;
+        // 这里多加了一个stateNode = null
+        newFiber.updateQueue = oldFiber.updateQueue || new UpdateQueue();
+      } else {
+        newFiber = {
+          tag: oldFiber.tag,
+          type: oldFiber.type,
+          props: newChild.props,
+          stateNode: oldFiber.stateNode, // 还没有创建真实DOM
+          return: currentFiber, // 父节点
+          alternate: oldFiber,
+          effectTag: UPDATE,
+          updateQueue: oldFiber.updateQueue || new UpdateQueue(),
+          nextEffect: null,
+        };
+      }
+    } else {
+      if (newChild) {
+        newFiber = {
+          tag,
+          type: newChild.type,
+          props: newChild.props,
+          stateNode: null, // 还没有创建真实DOM
+          return: currentFiber, // 父节点
+          effectTag: PLACEMENT,
+          updateQueue: new UpdateQueue(),
+          nextEffect: null,
+        };
+      }
+      if (oldFiber) {
+        oldFiber.effectTag = DELETION;
+        deletions.push(oldFiber);
+      }
+    }
+    if (oldFiber) {
+      oldFiber = oldFiber.sibling;
+    }
+    if (newFiber) {
+      if (newChildIndex === 0) {
+        // 第一个儿子 A1
+        currentFiber.child = newFiber;
+      } else {
+        // sibling 写成了sibing
+        prevSibling.sibling = newFiber;
+      }
+      prevSibling = newFiber;
+    }
+    newChildIndex++;
+  }
+}
+
 function workLoop(deadline) {
   let shouldYield = false;
   while (nextUnitOfWork && !shouldYield) {
@@ -158,151 +301,11 @@ function commitDeletion(currentFiber, domReturn) {
   }
 }
 
-// 开始工作  这里会将虚拟DOM转换成fiber节点
-function beginWork(currentFiber) {
-  if (currentFiber.tag === TAG_ROOT) {
-    updateHostRoot(currentFiber);
-  } else if (currentFiber.tag === TAG_HOST) {
-    updateHost(currentFiber);
-  } else if (currentFiber.tag === TAG_TEXT) {
-    updateHostText(currentFiber);
-  } else if (currentFiber.tag === TAG_FUNCTION_COMPONENT) {
-    updateFunctionComponent(currentFiber);
-  }
-}
-
-function updateFunctionComponent(currentFiber) {
-  hookIndex = 0;
-  workInProgressFiber = currentFiber;
-  workInProgressFiber.hooks = [];
-  // 忘记组装成一个数组了
-  const newChildren = [currentFiber.type(currentFiber.props)];
-  reconcileChildren(currentFiber, newChildren);
-}
-
-function updateHostText(currentFiber) {
-  if (!currentFiber.stateNode) {
-    currentFiber.stateNode = createDOM(currentFiber);
-  }
-}
-
-// A1
-function updateHost(currentFiber) {
-  if (!currentFiber.stateNode) {
-    currentFiber.stateNode = createDOM(currentFiber);
-  }
-  const newChildren = currentFiber.props.children;
-
-  reconcileChildren(currentFiber, newChildren);
-}
-
-function createDOM(currentFiber) {
-  if (currentFiber.tag === TAG_HOST) {
-    // 忘记怎么写了
-    const stateNode = document.createElement(currentFiber.type);
-    updateDOM(stateNode, {}, currentFiber.props);
-    return stateNode;
-  } else if (currentFiber.tag === TAG_TEXT) {
-    return document.createTextNode(currentFiber.props.text);
-  }
-}
-
-function updateDOM(stateNode, oldProps, newProps) {
-  // setAttribute 写成了attribute
-  if (stateNode?.setAttribute) {
-    setProps(stateNode, oldProps, newProps);
-  }
-}
-
-// 根节点
-function updateHostRoot(currentFiber) {
-  const newChildren = currentFiber.props.children;
-  reconcileChildren(currentFiber, newChildren);
-}
-
-// 生成fiber节点 以及复用旧的fiber节点
-// newChildren 是一个数组
-function reconcileChildren(currentFiber, newChildren) {
-  let newChildIndex = 0;
-  let prevSibling;
-  let oldFiber = currentFiber?.alternate?.child;
-  if (oldFiber) {
-    oldFiber.firstEffect = oldFiber.nextEffect = oldFiber.lastEffect = null;
-  }
-  while (newChildIndex < newChildren.length || oldFiber) {
-    const newChild = newChildren[newChildIndex];
-
-    let tag;
-    const sameType = oldFiber && newChild && oldFiber.type === newChild.type;
-    if (newChild && typeof newChild.type === 'string') {
-      // div p
-      tag = TAG_HOST;
-    } else if (newChild && newChild.type === ELEMENT_TEXT) {
-      tag = TAG_TEXT;
-    } else if (newChild && newChild.type === 'function') {
-      tag = TAG_FUNCTION_COMPONENT;
-    }
-
-    let newFiber;
-    if (sameType) {
-      if (oldFiber.alternate) {
-        newFiber = oldFiber.alternate;
-        newFiber.props = newChild.props;
-        newFiber.alternate = oldFiber;
-        newFiber.effectTag = UPDATE;
-        newFiber.nextEffect = null;
-        newFiber.stateNode = null;
-        newFiber.updateQueue = oldFiber.updateQueue || new UpdateQueue();
-      } else {
-        newFiber = {
-          tag: oldFiber.tag,
-          type: oldFiber.type,
-          props: newChild.props,
-          stateNode: oldFiber.stateNode, // 还没有创建真实DOM
-          return: currentFiber, // 父节点
-          alternate: oldFiber,
-          effectTag: UPDATE,
-          updateQueue: oldFiber.updateQueue || new UpdateQueue(),
-          nextEffect: null,
-        };
-      }
-    } else {
-      if (newChild) {
-        newFiber = {
-          tag,
-          type: newChild.type,
-          props: newChild.props,
-          stateNode: null, // 还没有创建真实DOM
-          return: currentFiber, // 父节点
-          effectTag: PLACEMENT,
-          updateQueue: new UpdateQueue(),
-          nextEffect: null,
-        };
-      }
-      if (oldFiber) {
-        oldFiber.effectTag = DELETION;
-        deletions.push(oldFiber);
-      }
-    }
-    if (oldFiber) {
-      oldFiber = oldFiber.sibling;
-    }
-    if (newFiber) {
-      if (newChildIndex === 0) {
-        // 第一个儿子 A1
-        currentFiber.child = newFiber;
-      } else {
-        // sibling 写成了sibing
-        prevSibling.sibling = newFiber;
-      }
-      prevSibling = newFiber;
-    }
-    newChildIndex++;
-  }
-}
-
 export function useReducer(reducer, initialValue) {
-  let newHook = workInProgressFiber?.alternate?.hooks?.[hookIndex];
+  let newHook =
+    workInProgressFiber.alternate &&
+    workInProgressFiber.alternate.hooks &&
+    workInProgressFiber.alternate.hooks[hookIndex];
   if (newHook) {
     newHook.state = newHook.updateQueue.forceUpdate(newHook.state);
   } else {
@@ -318,7 +321,7 @@ export function useReducer(reducer, initialValue) {
     scheduleRoot();
   };
   workInProgressFiber.hooks[hookIndex++] = newHook;
-  return [newHook, dispatch];
+  return [newHook.state, dispatch];
 }
 
 //
