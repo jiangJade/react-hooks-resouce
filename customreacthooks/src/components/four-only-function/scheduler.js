@@ -38,8 +38,8 @@ export function scheduleRoot(rootFiber) {
     }
   } else if (currentRoot) {
     // 当前渲染成功的树
+    rootFiber.alternate = currentRoot;
     if (rootFiber) {
-      rootFiber.alternate = currentRoot;
       workInProgressRoot = rootFiber;
     } else {
       workInProgressRoot = {

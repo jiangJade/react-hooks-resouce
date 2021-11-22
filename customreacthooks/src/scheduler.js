@@ -4,14 +4,44 @@ import {
   ELEMENT_TEXT,
   TAG_TEXT,
   PLACEMENT,
+  UPDATE,
+  DELETION,
+  TAG_FUNCTION_COMPONENT,
 } from './constants';
+import { Update, UpdateQueue } from './updateQueue';
 import { setProps } from './utils';
 let nextUnitOfWork = null; // 下一个工作单元
 let workInProgressRoot = null; // 根fiber
+let currentRoot = null; // 当前渲染成功的根fiber
+let deletions = []; // 删除节点没有加在effect list里面
+let hookIndex = 0;
+let workInProgressFiber = null;
 
 export function scheduleRoot(rootFiber) {
-  nextUnitOfWork = rootFiber;
-  workInProgressRoot = rootFiber;
+  if (currentRoot && currentRoot.alternate) {
+    workInProgressRoot = currentRoot.alternate;
+    workInProgressRoot.alternate = currentRoot;
+    if (rootFiber) {
+      workInProgressRoot.props = rootFiber.props;
+    }
+  } else if (currentRoot) {
+    if (rootFiber) {
+      rootFiber.alternate = currentRoot;
+      workInProgressRoot = rootFiber;
+    } else {
+      workInProgressRoot = {
+        ...currentRoot,
+        alternate: currentRoot,
+      };
+    }
+  } else {
+    workInProgressRoot = rootFiber;
+  }
+  workInProgressRoot.firstEffect =
+    workInProgressRoot.lastEffect =
+    workInProgressRoot.nextEffect =
+      null;
+  nextUnitOfWork = workInProgressRoot;
 }
 
 function performUnitOfWork(currentFiber) {
@@ -73,11 +103,14 @@ function workLoop(deadline) {
 }
 
 function commitRoot() {
+  deletions.forEach(commitWork);
   let currentFiber = workInProgressRoot.firstEffect;
   while (currentFiber) {
     commitWork(currentFiber);
     currentFiber = currentFiber.nextEffect;
   }
+  deletions.length = 0;
+  currentRoot = workInProgressRoot;
   workInProgressRoot = null;
 }
 
@@ -85,13 +118,44 @@ function commitWork(currentFiber) {
   if (!currentFiber) {
     return;
   }
-  const domReturn = currentFiber.return;
-
+  let returnFiber = currentFiber.return;
+  while (![TAG_ROOT, TAG_HOST, TAG_TEXT].includes(returnFiber.tag)) {
+    returnFiber = returnFiber.return;
+  }
+  let domReturn = returnFiber.stateNode;
   //写错了 写成了returnFiber.effectTag
   if (currentFiber.effectTag === PLACEMENT) {
-    domReturn.stateNode.appendChild(currentFiber.stateNode);
+    let nextFiber = currentFiber;
+    // 说明是函数 函数组件的儿子就是 counter
+    // 如果要挂载的节点不是DOM节点，比如说是类组件Fiber，直接找第一个儿子，知道找到一个真实DOM节点为止
+    while (nextFiber.tag !== TAG_HOST && nextFiber.tag !== TAG_TEXT) {
+      nextFiber = currentFiber.child;
+    }
+    domReturn.appendChild(nextFiber.stateNode);
+  } else if (currentFiber.effectTag === UPDATE) {
+    if (currentFiber.type === ELEMENT_TEXT) {
+      if (currentFiber.alternate.props.text !== currentFiber.props.text) {
+        currentFiber.stateNode.textContent = currentFiber.props.text;
+      } else {
+        updateDOM(
+          currentFiber.stateNode,
+          currentFiber.alternate.props,
+          currentFiber.props
+        );
+      }
+    }
+  } else if (currentFiber.effectTag === DELETION) {
+    return commitDeletion(currentFiber, domReturn);
   }
   currentFiber.effectTag = null;
+}
+
+function commitDeletion(currentFiber, domReturn) {
+  if (currentFiber.tag !== TAG_HOST && currentFiber.tag !== TAG_TEXT) {
+    domReturn.removeChild(currentFiber.stateNode);
+  } else {
+    commitDeletion(currentFiber.child, domReturn);
+  }
 }
 
 // 开始工作  这里会将虚拟DOM转换成fiber节点
@@ -102,7 +166,18 @@ function beginWork(currentFiber) {
     updateHost(currentFiber);
   } else if (currentFiber.tag === TAG_TEXT) {
     updateHostText(currentFiber);
+  } else if (currentFiber.tag === TAG_FUNCTION_COMPONENT) {
+    updateFunctionComponent(currentFiber);
   }
+}
+
+function updateFunctionComponent(currentFiber) {
+  hookIndex = 0;
+  workInProgressFiber = currentFiber;
+  workInProgressFiber.hooks = [];
+  // 忘记组装成一个数组了
+  const newChildren = [currentFiber.type(currentFiber.props)];
+  reconcileChildren(currentFiber, newChildren);
 }
 
 function updateHostText(currentFiber) {
@@ -150,26 +225,68 @@ function updateHostRoot(currentFiber) {
 function reconcileChildren(currentFiber, newChildren) {
   let newChildIndex = 0;
   let prevSibling;
-  while (newChildIndex < newChildren.length) {
+  let oldFiber = currentFiber?.alternate?.child;
+  if (oldFiber) {
+    oldFiber.firstEffect = oldFiber.nextEffect = oldFiber.lastEffect = null;
+  }
+  while (newChildIndex < newChildren.length || oldFiber) {
     const newChild = newChildren[newChildIndex];
 
     let tag;
+    const sameType = oldFiber && newChild && oldFiber.type === newChild.type;
     if (newChild && typeof newChild.type === 'string') {
       // div p
       tag = TAG_HOST;
     } else if (newChild && newChild.type === ELEMENT_TEXT) {
       tag = TAG_TEXT;
+    } else if (newChild && newChild.type === 'function') {
+      tag = TAG_FUNCTION_COMPONENT;
     }
 
-    let newFiber = {
-      tag,
-      type: newChild.type,
-      props: newChild.props,
-      stateNode: null, // 还没有创建真实DOM
-      return: currentFiber, // 父节点
-      effectTag: PLACEMENT,
-      nextEffect: null,
-    };
+    let newFiber;
+    if (sameType) {
+      if (oldFiber.alternate) {
+        newFiber = oldFiber.alternate;
+        newFiber.props = newChild.props;
+        newFiber.alternate = oldFiber;
+        newFiber.effectTag = UPDATE;
+        newFiber.nextEffect = null;
+        newFiber.stateNode = null;
+        newFiber.updateQueue = oldFiber.updateQueue || new UpdateQueue();
+      } else {
+        newFiber = {
+          tag: oldFiber.tag,
+          type: oldFiber.type,
+          props: newChild.props,
+          stateNode: oldFiber.stateNode, // 还没有创建真实DOM
+          return: currentFiber, // 父节点
+          alternate: oldFiber,
+          effectTag: UPDATE,
+          updateQueue: oldFiber.updateQueue || new UpdateQueue(),
+          nextEffect: null,
+        };
+      }
+    } else {
+      if (newChild) {
+        newFiber = {
+          tag,
+          type: newChild.type,
+          props: newChild.props,
+          stateNode: null, // 还没有创建真实DOM
+          return: currentFiber, // 父节点
+          effectTag: PLACEMENT,
+          updateQueue: new UpdateQueue(),
+          nextEffect: null,
+        };
+      }
+      if (oldFiber) {
+        oldFiber.effectTag = DELETION;
+        deletions.push(oldFiber);
+      }
+    }
+    if (oldFiber) {
+      oldFiber = oldFiber.sibling;
+    }
     if (newFiber) {
       if (newChildIndex === 0) {
         // 第一个儿子 A1
@@ -182,6 +299,26 @@ function reconcileChildren(currentFiber, newChildren) {
     }
     newChildIndex++;
   }
+}
+
+export function useReducer(reducer, initialValue) {
+  let newHook = workInProgressFiber?.alternate?.hooks?.[hookIndex];
+  if (newHook) {
+    newHook.state = newHook.updateQueue.forceUpdate(newHook.state);
+  } else {
+    newHook = {
+      state: initialValue,
+      updateQueue: new UpdateQueue(),
+    };
+  }
+
+  const dispatch = (action) => {
+    const payload = reducer ? reducer(newHook.state, action) : action;
+    newHook.updateQueue.enqueueUpdate(new Update(payload));
+    scheduleRoot();
+  };
+  workInProgressFiber.hooks[hookIndex++] = newHook;
+  return [newHook, dispatch];
 }
 
 //
