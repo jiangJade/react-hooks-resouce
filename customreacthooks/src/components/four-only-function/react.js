@@ -1,4 +1,5 @@
 import { ELEMENT_TEXT } from './constants';
+import { useReducer } from './scheduler';
 
 function createElement(type, config, ...children) {
   // 1写成children了
@@ -25,6 +26,7 @@ function createElement(type, config, ...children) {
 
 const React = {
   createElement,
+  useReducer,
 };
 
 export default React;

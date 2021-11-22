@@ -86,7 +86,7 @@ function beginWork(currentFiber) {
     // A1 div 执行完了后 回去找child 会取出 [A1，B1，B2]  执行两次的原因是workLoop是一个每帧都会执行的函数
     // 为什么A1执行完了之后 会走 currentFiber.child逻辑
     // 因为 第一次走reconcileChildren函数逻辑时 currentFiber 就是rootFiber,
-    这时为rootFiber添加了一个child属性
+    这时在reconcileChildren里面为rootFiber添加了一个child属性
     */
     updateHostRoot(currentFiber);
     // 先走TAG_TEXT
@@ -102,7 +102,6 @@ function beginWork(currentFiber) {
 // 8忘记updateHost怎么写的了
 // 创建真实DOM
 function updateHost(currentFiber) {
-  debugger;
   if (!currentFiber.stateNode) {
     currentFiber.stateNode = createDOM(currentFiber);
   }
@@ -223,4 +222,5 @@ function workLoop(deadline) {
 
 // 1这里写了之后忘记声明workInProgressRoot
 // react 告诉浏览器 有时间帮我执行一下任务 浏览器每秒执行60帧 . 一帧16.66毫秒
+//expirationTime 过期时间
 requestIdleCallback(workLoop, { timeout: 500 });
