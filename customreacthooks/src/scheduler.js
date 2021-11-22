@@ -14,6 +14,51 @@ export function scheduleRoot(rootFiber) {
   workInProgressRoot = rootFiber;
 }
 
+function performUnitOfWork(currentFiber) {
+  //直到遍历完所有的dom
+  beginWork(currentFiber);
+  if (currentFiber.child) {
+    return currentFiber.child;
+  }
+  while (currentFiber) {
+    completeUnitOfWork(currentFiber);
+    if (currentFiber.sibling) {
+      return currentFiber.sibling;
+    }
+    currentFiber = currentFiber.return;
+  }
+}
+
+// 完成收集工作
+function completeUnitOfWork(currentFiber) {
+  // 先完成的是A1文本
+  // 先找父亲
+  let returnFiber = currentFiber.return;
+  if (returnFiber) {
+    if (!returnFiber.firstEffect) {
+      returnFiber.firstEffect = currentFiber.firstEffect;
+    }
+    if (currentFiber.lastEffect) {
+      if (returnFiber.lastEffect) {
+        returnFiber.lastEffect.nextEffect = currentFiber.firstEffect;
+      }
+      // 这里多写了一个else
+      returnFiber.lastEffect = currentFiber.lastEffect;
+    }
+
+    const effectTag = currentFiber.effectTag;
+    if (effectTag) {
+      if (returnFiber.lastEffect) {
+        returnFiber.lastEffect.nextEffect = currentFiber;
+      } else {
+        // 这里写成了 returnFiber.lastEffect = currentFiber;
+        returnFiber.firstEffect = currentFiber;
+      }
+      returnFiber.lastEffect = currentFiber;
+    }
+  }
+}
+
 function workLoop(deadline) {
   let shouldYield = false;
   while (nextUnitOfWork && !shouldYield) {
@@ -47,49 +92,6 @@ function commitWork(currentFiber) {
     domReturn.stateNode.appendChild(currentFiber.stateNode);
   }
   currentFiber.effectTag = null;
-}
-
-function performUnitOfWork(currentFiber) {
-  //直到遍历完所有的dom
-  beginWork(currentFiber);
-  if (currentFiber.child) {
-    return currentFiber.child;
-  }
-  while (currentFiber) {
-    completeUnitOfWork(currentFiber);
-    if (currentFiber.sibling) {
-      return currentFiber.sibling;
-    }
-    currentFiber = currentFiber.return;
-  }
-}
-
-// 完成收集工作
-function completeUnitOfWork(currentFiber) {
-  let returnFiber = currentFiber.return;
-  if (returnFiber) {
-    if (!returnFiber.firstEffect) {
-      returnFiber.firstEffect = currentFiber.firstEffect;
-    }
-    if (!!currentFiber.lastEffect) {
-      if (!!returnFiber.lastEffect) {
-        returnFiber.lastEffect.nextEffect = currentFiber.firstEffect;
-      } else {
-        returnFiber.lastEffect = currentFiber.lastEffect;
-      }
-    }
-
-    const effectTag = currentFiber.effectTag;
-    if (effectTag) {
-      if (returnFiber.lastEffect) {
-        returnFiber.lastEffect.nextEffect = currentFiber;
-      } else {
-        // 这里写成了 returnFiber.lastEffect = currentFiber;
-        returnFiber.firstEffect = currentFiber;
-      }
-      returnFiber.lastEffect = currentFiber;
-    }
-  }
 }
 
 // 开始工作  这里会将虚拟DOM转换成fiber节点
