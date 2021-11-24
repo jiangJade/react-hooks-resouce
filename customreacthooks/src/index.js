@@ -3,6 +3,25 @@ import ReactDom from './react-dom';
 import { ADD } from './constants';
 // const style = { border: 'solid 2px red', margin: '20px' };
 
+// const element = (
+//   <div id='A1' style={style}>
+//     A1
+//     <div id='B1' style={style}>
+//       B1
+//       <div id='C1' style={style}>
+//         C1
+//       </div>
+//       <div id='C2' style={style}>
+//         C2
+//       </div>
+//     </div>
+//     <div id='B2' style={style}>
+//       B2
+//     </div>
+//   </div>
+// );
+// ReactDom.render(element, document.getElementById('root'));
+
 // const render2 = document.getElementById('render2');
 // render2.addEventListener('click', () => {
 //   const element2 = (
@@ -14,7 +33,7 @@ import { ADD } from './constants';
 //           C1-new
 //         </div>
 //         <div id='C2' style={style}>
-//           C1-new
+//           C2-new
 //         </div>
 //       </div>
 //       <div id='B2' style={style}>
@@ -35,7 +54,7 @@ import { ADD } from './constants';
 //           C1-new2
 //         </div>
 //         <div id='C2' style={style}>
-//           C1-new2
+//           C2-new2
 //         </div>
 //       </div>
 //     </div>

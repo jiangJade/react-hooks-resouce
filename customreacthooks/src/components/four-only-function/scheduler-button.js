@@ -204,7 +204,6 @@ function reconcileChildren(currentFiber, newChildren) {
         newFiber.alternate = oldFiber;
         newFiber.effectTag = UPDATE;
         newFiber.nextEffect = null;
-        newFiber.stateNode = null;
       }
       newFiber = {
         tag: oldFiber.tag,
