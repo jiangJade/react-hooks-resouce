@@ -3,7 +3,7 @@ import { TAG_ROOT } from './constants';
 
 function render(element, container) {
   let rootFiber = {
-    tag: TAG_ROOT, // 这里写错了 写成了type 应该是tag
+    tag: TAG_ROOT,
     stateNode: container,
     props: { children: [element] },
   };
