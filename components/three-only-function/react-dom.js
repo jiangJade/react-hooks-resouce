@@ -2,9 +2,9 @@ import { TAG_ROOT } from './constants';
 import { scheduleRoot } from './scheduler';
 
 function render(element, container) {
-  let rootFiber = {
+  const rootFiber = {
     tag: TAG_ROOT,
-    stateNode: container,
+    stateNode: container, // root div
     props: { children: [element] },
   };
   scheduleRoot(rootFiber);

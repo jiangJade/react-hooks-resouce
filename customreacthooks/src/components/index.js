@@ -1,9 +1,9 @@
 import React from './react';
 import ReactDom from './react-dom';
 import { ADD } from './constants';
-const style = { border: 'solid 2px red', margin: '20px' };
+// const style = { border: 'solid 2px red', padding: '20px' };
 
-// let element = (
+// const element = (
 //   <div id='A1' style={style}>
 //     A1
 //     <div id='B1' style={style}>
@@ -20,16 +20,21 @@ const style = { border: 'solid 2px red', margin: '20px' };
 //       <div id='D1' style={style}>
 //         D1
 //       </div>
+//       <div id='D2' style={style}>
+//         D2
+//       </div>
 //     </div>
 //   </div>
 // );
-// ReactDom.render(element, document.getElementById('root'));
 
 // console.log(element);
-// let render2 = document.getElementById('render2');
+
+// // ReactDom.render(element, document.getElementById('root'));
+
+// const render2 = document.getElementById('render2');
 // render2.addEventListener('click', () => {
-//   let element2 = (
-//     <div id='A1' style={style}>
+//   const element2 = (
+//     <div id='A1-new' style={style}>
 //       A1-new
 //       <div id='B1' style={style}>
 //         B1-new
@@ -45,16 +50,18 @@ const style = { border: 'solid 2px red', margin: '20px' };
 //         <div id='D1' style={style}>
 //           D1-new
 //         </div>
+//         <div id='D2' style={style}>
+//           D2-new
+//         </div>
 //       </div>
 //     </div>
 //   );
-
 //   ReactDom.render(element2, document.getElementById('root'));
 // });
-// let render3 = document.getElementById('render3');
+// const render3 = document.getElementById('render3');
 // render3.addEventListener('click', () => {
-//   let element3 = (
-//     <div id='A1' style={style}>
+//   const element3 = (
+//     <div id='A1-new' style={style}>
 //       A1-new-new
 //       <div id='B1' style={style}>
 //         B1-new-new
@@ -67,16 +74,18 @@ const style = { border: 'solid 2px red', margin: '20px' };
 //       </div>
 //       <div id='B2' style={style}>
 //         B2-new-new
+//         <div id='D2' style={style}>
+//           D2-new-new
+//         </div>
 //       </div>
 //     </div>
 //   );
-
 //   ReactDom.render(element3, document.getElementById('root'));
 // });
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'ADD':
+    case ADD:
       return { count: state.count + 1 };
 
     default:
@@ -85,11 +94,23 @@ function reducer(state, action) {
 }
 
 function FunctionComponent() {
-  const [conutState, dispatch] = React.useReducer(reducer, { count: 0 });
+  const [numberState, setNumberState] = React.useState({ number: 1 });
+  const [countState, dispatch] = React.useRenducer(reducer, { count: 1 });
+
   return (
-    <div id='counter'>
-      <span>{conutState.count}</span>
-      <button onClick={() => dispatch({ type: 'ADD' })}>计数器</button>
+    <div>
+      <div id='counter'>
+        <span>{numberState.number}</span>
+        <button
+          onClick={() => setNumberState({ number: numberState.number + 1 })}
+        >
+          计数器
+        </button>
+      </div>
+      <div id='counter'>
+        <span>{countState.count}</span>
+        <button onClick={() => dispatch({ type: ADD })}>计数器</button>
+      </div>
     </div>
   );
 }

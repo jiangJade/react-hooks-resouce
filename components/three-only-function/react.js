@@ -2,12 +2,12 @@ import { ELEMENT_TEXT } from './constants';
 import { useReducer } from './scheduler';
 
 function createElement(type, config, ...children) {
-  delete config.__self;
   delete config.__source;
+  delete config.__self;
   return {
-    type, // 'div' ''
+    type,
     props: {
-      ...config, // ref key
+      ...config,
       children: children.map((child) => {
         return typeof child === 'object'
           ? child
@@ -19,6 +19,7 @@ function createElement(type, config, ...children) {
     },
   };
 }
+
 const React = {
   createElement,
   useReducer,

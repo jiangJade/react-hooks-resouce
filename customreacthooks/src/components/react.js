@@ -1,13 +1,12 @@
 import { ELEMENT_TEXT } from './constants';
-import { useReducer } from './scheduler';
-
+import { useRenducer, useState } from './scheduler';
 function createElement(type, config, ...children) {
   delete config.__self;
-  delete config.__source;
+  delete config.__source; // 表示这个元素是在哪一行哪列那个文件
   return {
-    type, // 'div' ''
+    type,
     props: {
-      ...config, // ref key
+      ...config, // key ref
       children: children.map((child) => {
         return typeof child === 'object'
           ? child
@@ -21,7 +20,8 @@ function createElement(type, config, ...children) {
 }
 const React = {
   createElement,
-  useReducer,
+  useRenducer,
+  useState,
 };
 
 export default React;
